@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Zee — Retro Archive Envelope</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Caveat:wght@600;700&display=swap');
+
+  :root {
+    --pastel-blue: #b8d0eb;
+    --deep-blue: #23395d;
+    --soft-blue: #dce8f5;
+    --paper: #f6f4ef;
+    --ink: #141414;
+    --white: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(rgba(35, 57, 93, 0.08) 1px, transparent 0),
+      linear-gradient(180deg, #dce8f5 0%, #f6f4ef 45%, #e8eff7 100%);
+    background-size: 20px 20px, 100% 100%;
+    color: var(--ink);
+    font-family: 'Courier Prime', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 16px 12px 44px;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 300;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  .hidden { display: none !important; }
+  #envelopeScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 20, 0.72);
+    backdrop-filter: blur(8px);
+    padding: 16px;
+    transition: opacity 0.45s ease;
+  }
+
+  #envelopeScreen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .env-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    padding-top: 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .env-top-flap {
+    position: absolute;
+    top: 6px;
+    left: 6%;
+    right: 6%;
+    height: 82px;
+    background: var(--pastel-blue);
+    border: 3px solid var(--ink);
+    border-bottom: none;
+    transform-origin: bottom center;
+    transform: rotateX(18deg);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--deep-blue);
+  }
+
+  .env-pouch {
+    position: relative;
+    width: 100%;
+    background: var(--soft-blue);
+    border: 3px solid var(--ink);
+    box-shadow: 9px 9px 0px var(--pastel-blue);
+    padding: 18px 16px 20px;
+    z-index: 4;
+    overflow: hidden;
+  }
+  .env-side-left, .env-side-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    background: var(--pastel-blue);
+    pointer-events: none;
+  }
+
+  .env-side-left {
+    left: 0;
+    border-right: 2px solid var(--ink);
+    transform: translateX(-6px) skewY(-18deg);
+  }
+
+  .env-side-right {
+    right: 0;
+    border-left: 2px solid var(--ink);
+    transform: translateX(6px) skewY(18deg);
+  }
+
+  .env-header-box {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    background: var(--white);
+    border: 2px solid var(--ink);
+    padding: 13px 12px;
+    margin-bottom: 13px;
+  }
+
+  .env-badge {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+  .env-bday-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    line-height: 1.25;
+    margin: 4px 0 6px;
+    color: var(--ink);
+  }
+
+  .env-sub-text {
+    font-size: 11.5px;
+    line-height: 1.5;
+    margin: 0;
+    color: var(--deep-blue);
+  }
+
+  .letter-sheet {
+    position: relative;
+    z-index: 3;
+    background: var(--paper);
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0px var(--ink);
+    padding: 14px;
+    margin: 10px 0 14px;
+    text-align: left;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(42px) scale(0.96);
+    overflow: hidden;
+    transition: max-height 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+  }
+  .letter-sheet.slide-out {
+    max-height: 220px;
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+
+  .letter-sheet.slide-out.expanded {
+    max-height: 540px;
+    background: var(--white);
+    box-shadow: 6px 6px 0px var(--pastel-blue);
+  }
+  .letter-tag {
+    display: inline-block;
+    background: var(--pastel-blue);
+    border: 1.5px solid var(--ink);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+  }
+
+  .letter-preview, .letter-full-body {
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .letter-full-body {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1.5px dashed var(--ink);
+  }
+
+  .tap-hint {
+    display: block;
+    margin-top: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--deep-blue);
+    text-align: right;
+  }
+
+  .btn-first, .btn-second {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0px var(--ink);
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 16px;
+    cursor: pointer;
+  }
+
+  .btn-first { background: var(--white); color: var(--ink); }
+  .btn-second { background: var(--deep-blue); color: var(--white); margin-top: 10px; }
+  .btn-first:active, .btn-second:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px var(--ink); }
+  .topbar {
+    max-width: 560px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 60;
+  }
+
+  .menu-btn {
+    background: var(--white);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0px var(--pastel-blue);
+    font-family: 'Courier Prime', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    width: 44px;
+    height: 40px;
+    cursor: pointer;
+  }
+
+  .current-section-pill {
+    background: var(--ink);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+  }
+
+  .nav-dropdown {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    width: 235px;
+    background: var(--paper);
+    border: 2.5px solid var(--ink);
+    box-shadow: 6px 6px 0px var(--pastel-blue);
+    z-index: 80;
+    text-align: left;
+  }
+
+  .nav-item {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px dashed var(--ink);
+    padding: 11px 14px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    display: block;
+  }
+
+  .nav-item:last-child { border-bottom: none; }
+  .nav-item.active, .nav-item:hover { background: var(--pastel-blue); }
+  .scrapbook {
+    max-width: 560px;
+    margin: 0 auto;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    box-shadow: 10px 10px 0px var(--pastel-blue);
+    padding: 22px 16px 26px;
+    text-align: center;
+  }
+
+  .gingham-strip {
+    height: 16px;
+    width: 100%;
+    margin-bottom: 14px;
+    border: 2px solid var(--ink);
+    background-color: var(--white);
+    background-image:
+      linear-gradient(90deg, rgba(164, 194, 228, 0.65) 50%, transparent 50%),
+      linear-gradient(rgba(164, 194, 228, 0.65) 50%, transparent 50%);
+    background-size: 16px 16px;
+  }
+
+  .princess-note {
+    font-family: 'Caveat', cursive;
+    font-size: 23px;
+    color: var(--deep-blue);
+    margin: 0;
+    transform: rotate(-1.5deg);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 29px;
+    line-height: 1.15;
+    margin: 6px 0 4px;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+
+  .nickname {
+    display: inline-block;
+    background: var(--pastel-blue);
+    border: 2px solid var(--ink);
+    padding: 3px 16px;
+    font-weight: 700;
+    font-size: 13px;
+    margin: 6px 0 12px;
+    box-shadow: 3px 3px 0px var(--ink);
+  }
+  .kpop-ticket {
+    background: var(--ink);
+    color: var(--white);
+    padding: 10px;
+    margin: 10px 0 14px;
+    border: 2px solid var(--ink);
+  }
+
+  .kpop-ticket .sub {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: var(--pastel-blue);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .kpop-groups { font-weight: 700; font-size: 13.5px; letter-spacing: 1.5px; }
+
+  .inside-letter {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 15px 14px;
+    margin: 14px 0;
+    text-align: left;
+    position: relative;
+  }
+
+  .inside-letter::before {
+    content: "✦ ZEE ARCHIVE HUB";
+    position: absolute;
+    top: -11px;
+    left: 12px;
+    background: var(--pastel-blue);
+    border: 1.5px solid var(--ink);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 8px;
+  }
+
+  .quick-nav-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-top: 14px;
+  }
+
+  .q-btn {
+    background: var(--soft-blue);
+    border: 2px solid var(--ink);
+    box-shadow: 2.5px 2.5px 0px var(--ink);
+    padding: 9px 6px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .polaroid-stack { display: flex; flex-direction: column; gap: 14px; margin: 12px 0 16px; }
+
+  .polaroid {
+    background-color: var(--white);
+    background-image:
+      linear-gradient(90deg, rgba(184, 208, 235, 0.45) 50%, transparent 50%),
+      linear-gradient(rgba(184, 208, 235, 0.45) 50%, transparent 50%);
+    background-size: 12px 12px;
+    border: 2px solid var(--ink);
+    padding: 8px 8px 10px;
+    box-shadow: 4px 4px 0px var(--ink);
+    cursor: pointer;
+  }
+
+  .polaroid img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background: #141414;
+    border: 1.5px solid var(--ink);
+    display: block;
+  }
+
+  .polaroid.zoomed img { object-fit: cover; }
+
+  .polaroid-meta {
+    display: flex;
+    justify-content: space-between;
+    background: var(--white);
+    border: 1px solid var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 6px;
+    padding: 4px 8px;
+  }
+  .member-wish-panel {
+    background: var(--paper);
+    border: 2.5px solid var(--ink);
+    box-shadow: 5px 5px 0px var(--pastel-blue);
+    padding: 13px 12px;
+    margin: 12px 0 16px;
+    text-align: left;
+  }
+
+  .member-wish-item {
+    background: var(--white);
+    border: 1.5px solid var(--ink);
+    padding: 9px 10px;
+    margin-top: 8px;
+  }
+
+  .member-name-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--deep-blue);
+    margin-bottom: 4px;
+  }
+
+  .member-native { font-size: 12.5px; font-weight: 700; margin: 2px 0 4px; }
+  .member-trans { font-size: 11.5px; color: #333; margin: 0; font-style: italic; }
+  .music-deck, .trivia-box, .comment-box {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0px var(--pastel-blue);
+    padding: 13px 12px;
+    margin: 10px 0 14px;
+    text-align: left;
+  }
+
+  .comment-box { background: var(--soft-blue); box-shadow: 4px 4px 0px var(--ink); }
+  .deck-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--deep-blue);
+    border-bottom: 1.5px dashed var(--ink);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+
+  .track-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+  .tpill {
+    background: var(--white);
+    border: 1.5px solid var(--ink);
+    padding: 6px 4px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tpill.active { background: var(--pastel-blue); box-shadow: 2px 2px 0px var(--ink); }
+
+  .deck-controls { display: flex; gap: 6px; }
+  .d-btn {
+    flex: 1;
+    background: var(--ink);
+    color: var(--white);
+    border: 1.5px solid var(--ink);
+    padding: 7px 6px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .deck-bar { height: 8px; background: var(--white); border: 1.5px solid var(--ink); margin-top: 10px; overflow: hidden; }
+  .deck-fill { height: 100%; width: 0%; background: var(--pastel-blue); transition: width 0.25s linear; }
+  button#play {
+    background: var(--deep-blue);
+    color: var(--white);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0px var(--ink);
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 18px;
+    cursor: pointer;
+    margin: 6px 0 10px;
+  }
+
+  #notes { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin: 8px auto 14px; }
+  .note { background: var(--paper); border: 1.5px solid var(--ink); padding: 5px 4px; min-width: 40px; font-size: 11px; }
+  .note.active { background: var(--pastel-blue); transform: translateY(-3px); }
+
+  #piano { display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .key {
+    background: var(--white);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0px var(--ink);
+    width: 48px;
+    height: 88px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+  }
+  .trivia-opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--white);
+    border: 1.5px solid var(--ink);
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .trivia-opt.picked { background: var(--pastel-blue); }
+  .retro-receipt {
+    background: var(--white);
+    border: 2px dashed var(--ink);
+    padding: 12px;
+    margin: 12px 0;
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    font-family: 'Courier Prime', monospace;
+    font-size: 12.5px;
+    background: var(--white);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    padding: 8px 10px;
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+
+  .btn-wa {
+    width: 100%;
+    background: var(--ink);
+    color: var(--white);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0px var(--white);
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 12px;
+    cursor: pointer;
+  }
+
+  .share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-sec {
+    background: var(--white);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0px var(--pastel-blue);
+    font-family: 'Courier Prime', monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 10px 8px;
+    cursor: pointer;
+  }
+
+  .from-findz {
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .from-badge { background: var(--ink); color: var(--white); padding: 5px 12px; font-weight: 700; }
+
+  .float-item { position: fixed; bottom: -60px; font-size: 26px; animation: fly linear forwards; pointer-events: none; z-index: 99; }
+  @keyframes fly { to { transform: translateY(-115vh) rotate(25deg); } }
+</style>
+</head>
+<body>
+<div id="envelopeScreen">
+  <div class="env-wrapper">
+    <div class="env-top-flap">OPEN ENVELOPE • FOR ZEE</div>
+    <div class="env-pouch">
+      <div class="env-side-left"></div>
+      <div class="env-side-right"></div>
+      <div class="env-header-box">
+        <div class="env-badge">RETRO ARCHIVE • BLUE / B&amp;W</div>
+        <h2 class="env-bday-text">Selamat Ulang Tahun, Athaya Zivara Adini (Zee)!</h2>
+        <p class="env-sub-text">Selamat bertambah usia ya, Zee! Semoga sehat selalu, lancar segala urusan &amp; belajarnya, dan tiap hari penuh kabar baik.</p>
+      </div>
+      <button class="btn-first" id="firstBtn" onclick="pullLetterOut()">✉ TOMBOL 1: KELUARKAN KERTAS DARI AMPLOP</button>
+      <div class="letter-sheet" id="letterSheet" onclick="expandLetter()">
+        <div class="letter-tag">✦ KERTAS DARI DALAM AMPLOP</div>
+        <p class="letter-preview">Catatan khusus ala <b>CORTIS, ENHYPEN, &amp; LNGSHOT</b> buat Zee. Tap kertas ini buat buka penuh.</p>
+        <div class="letter-full-body hidden" id="letterFullBody">Kertasnya udah kebuka penuh! Ada ucapan per-member pas klik foto card, trivia vibe, struk ucapan retro, dan kirim langsung ke WA Zee. 💙✨</div>
+        <span class="tap-hint" id="letterTapHint">▲ TAP KERTAS INI BIAR TERBUKA FULL ▲</span>
+      </div>
+      <button class="btn-second hidden" id="secondBtn" onclick="enterMainWeb()">🚀 TOMBOL 2: BUKA WEB UTAMA</button>
+    </div>
+  </div>
+</div>
+<div class="topbar">
+  <button class="menu-btn" onclick="toggleMenu(event)" aria-label="Buka Menu">☰</button>
+  <div class="current-section-pill" id="sectionPill">MENU: HOME</div>
+  <div class="nav-dropdown hidden" id="navMenu">
+    <button class="nav-item active" onclick="goSection('home', 'MENU: HOME', this)">🏠 Home</button>
+    <button class="nav-item" onclick="goSection('photos', 'MENU: PHOTO CARDS', this)">🖼 Photo Cards &amp; Member</button>
+    <button class="nav-item" onclick="goSection('music', 'MENU: MUSIC DECK', this)">🎧 Music Deck &amp; Piano</button>
+    <button class="nav-item" onclick="goSection('komen', 'MENU: TRIVIA, RECEIPT &amp; WA', this)">💌 Trivia, Receipt &amp; WA</button>
+  </div>
+</div>
+
+<div class="scrapbook" id="mainApp">
+  <div class="gingham-strip"></div>
+
+  <div id="sec-home">
+    <p class="princess-note">who's a birthday princess? you're a birthday princess 👑</p>
+    <h1>Athaya Zivara Adini</h1>
+    <div class="nickname">✦ AKA: ZEE ✦</div>
+    <div class="kpop-ticket"><span class="sub">OFFICIAL BIRTHDAY LINEUP</span><div class="kpop-groups">CORTIS • ENHYPEN • LNGSHOT</div></div>
+    <div class="inside-letter">
+      <p style="font-size:13px; line-height:1.65; margin:4px 0 8px;"><b>Selamat ulang tahun ya, Zee!</b> Di hari spesialmu ini, semoga langkah-langkahmu selalu dimudahkan, hatimu dijauhkan dari rasa lelah yang berlebihan, dan setiap hal baik yang sedang kamu usahakan pelan-pelan membuahkan hasil manis. Tetap jadi pribadi yang hangat, seru, dan bersinar dengan caramu sendiri, birthday princess!</p>
+      <p style="font-size:12px; line-height:1.6; margin:0; color:var(--deep-blue);">Pakai tombol <b>☰</b> di pojok kiri atas buat cek foto card tiap member, putar musik, main trivia, atau cetak struk ucapan ke WA Zee. ✨</p>
+    </div>
+    <div class="quick-nav-row">
+      <button class="q-btn" onclick="openTabByName('photos')">🖼 FOTO MEMBER</button>
+      <button class="q-btn" onclick="openTabByName('music')">🎧 MUSIK</button>
+      <button class="q-btn" onclick="openTabByName('komen')">💌 TRIVIA &amp; WA</button>
+    </div>
+  </div>
+  <div id="sec-photos" class="hidden">
+    <h2 style="margin:4px 0 10px; font-size:17px;">🖼 TAP CARD BUAT LIHAT UCAPAN MEMBER</h2>
+    <div class="polaroid-stack">
+      <div class="polaroid" onclick="showGroupWishes('CORTIS', this)">
+        <img src="IMG-20261104-WA0017.jpg" alt="CORTIS" onerror="this.src='https://placehold.co/600x450/23395d/ffffff?text=CORTIS+FULL'">
+        <div class="polaroid-meta"><span>CORTIS (5 MEMBERS)</span><span>TAP: UCAPAN MEMBER</span></div>
+      </div>
+      <div class="polaroid" onclick="showGroupWishes('ENHYPEN', this)">
+        <img src="IMG-20261104-WA0016.jpg" alt="ENHYPEN" onerror="this.src='https://placehold.co/600x450/141414/b8d0eb?text=ENHYPEN+FULL'">
+        <div class="polaroid-meta"><span>ENHYPEN (6 MEMBERS)</span><span>TAP: UCAPAN MEMBER</span></div>
+      </div>
+      <div class="polaroid" onclick="showGroupWishes('LNGSHOT', this)">
+        <img src="IMG-20261104-WA0019.jpg" alt="LNGSHOT" onerror="this.src='https://placehold.co/600x450/141414/dce8f5?text=LNGSHOT+FULL'">
+        <div class="polaroid-meta"><span>LNGSHOT (4 MEMBERS)</span><span>TAP: UCAPAN MEMBER</span></div>
+      </div>
+    </div>
+    <div class="member-wish-panel hidden" id="memberWishPanel">
+      <div class="deck-top"><span id="wishGroupTitle">MEMBER WISHES</span><span id="wishGroupCount">0 MEMBERS</span></div>
+      <div id="memberWishList"></div>
+    </div>
+  </div>
+  <div id="sec-music" class="hidden">
+    <div class="music-deck">
+      <div class="deck-top"><span>🎧 RETRO MUSIC DECK</span><span id="deckStatus">PAUSED</span></div>
+      <div id="trackTitle" style="font-weight:700; font-size:13.5px;">CORTIS — What You Want</div>
+      <div id="trackSub" style="font-size:11px; opacity:.8; margin:3px 0 8px;">Pastel Blue • Tape 01 (cortis.mp3)</div>
+      <div class="track-pills">
+        <button class="tpill active" onclick="selectTrack(0)">▶ CORTIS</button>
+        <button class="tpill" onclick="selectTrack(1)">▶ ENHYPEN</button>
+        <button class="tpill" onclick="selectTrack(2)">▶ LNGSHOT</button>
+      </div>
+      <div class="deck-controls">
+        <button class="d-btn" onclick="toggleTrack()">▶ PLAY / PAUSE</button>
+        <button class="d-btn" onclick="prevNextTrack(-1)">⏮ PREV</button>
+        <button class="d-btn" onclick="prevNextTrack(1)">NEXT ⏭</button>
+      </div>
+      <div class="deck-bar"><div class="deck-fill" id="deckFill"></div></div>
+      <audio id="kpopAudio" preload="auto"></audio>
+    </div>
+    <button id="play">▶ PLAY BIRTHDAY TUNE 🎶</button>
+    <div id="notes"></div>
+    <div style="font-size:12px; font-weight:700; margin-top:12px;">🎹 MINI SYNTH PIANO</div>
+    <div id="piano"></div>
+  </div>
+  <div id="sec-komen" class="hidden">
+    <div class="trivia-box">
+      <div class="deck-top"><span>⚡ QUICK VIBE TRIVIA</span><span id="triviaBadge">1/2</span></div>
+      <div id="triviaQuestion" style="font-weight:700; font-size:12.5px; margin-bottom:6px;"></div>
+      <div id="triviaOptions"></div>
+      <div id="triviaResult" style="font-size:11.5px; font-weight:700; margin-top:8px; color:var(--deep-blue);"></div>
+    </div>
+
+    <div class="comment-box">
+      <h3 style="margin:0 0 4px; font-size:15px;">💌 KIRIM UCAPAN KE WA ZEE</h3>
+      <p style="font-size:11.5px; margin:0 0 10px; color:var(--deep-blue);">Target WA Zee: <b>+62 895-6045-98438</b></p>
+      <div class="field"><label for="senderName">Nama Kamu</label><input type="text" id="senderName" placeholder="Tulis nama kamu..." oninput="updateReceipt()"></div>
+      <div class="field">
+        <label for="biasTag">Pilihan Grup / Vibe</label>
+        <select id="biasTag" onchange="updateReceipt()">
+          <option value="CORTIS • ENHYPEN • LNGSHOT">CORTIS • ENHYPEN • LNGSHOT</option>
+          <option value="CORTIS — What You Want">CORTIS — What You Want</option>
+          <option value="ENHYPEN — Given-Taken">ENHYPEN — Given-Taken</option>
+          <option value="LNGSHOT — Moonwalkin'">LNGSHOT — Moonwalkin'</option>
+        </select>
+      </div>
+      <div class="field"><label for="wishMsg">Ucapan Buat Zee</label><textarea id="wishMsg" placeholder="Tulis ucapan ultah buat Zee..." oninput="updateReceipt()"></textarea></div>
+      <div class="retro-receipt" id="retroReceipt">
+        <b>🧾 ZEE RETRO RECEIPT</b><br>
+        FROM: <span id="rcName">Teman Zee</span><br>
+        VIBE: <span id="rcTag">CORTIS • ENHYPEN • LNGSHOT</span><br>
+        NOTE: <span id="rcMsg">Happy Birthday Zee!</span>
+      </div>
+      <button class="btn-wa" onclick="sendToWA()">📲 KIRIM UCAPAN KE WHATSAPP ZEE</button>
+    </div>
+
+    <div class="share-row">
+      <button class="btn-sec" onclick="shareStatusWA()">📤 SHARE KE STATUS WA</button>
+      <button class="btn-sec" id="copyBtn" onclick="copyPageLink()">🔗 SALIN LINK HALAMAN</button>
+    </div>
+  </div>
+
+  <div class="from-findz">
+    <span style="font-weight:700;">PASTEL BLUE • B&amp;W ARCHIVE</span>
+    <div class="from-badge">FROM: FINDZ</div>
+  </div>
+</div>
+<script>
+const ZEE_WA = "62895604598438";
+const groupWishes = {
+  CORTIS: [
+    { name: "Martin", lang: "English / Korean", native: "Happy birthday, Zee! Keep creating your own color and stay awesome!", trans: "Selamat ulang tahun, Zee! Terus ciptakan warnamu sendiri dan tetap keren!" },
+    { name: "James", lang: "English / Thai / Mandarin", native: "สุขสันต์วันเกิดนะ Zee! 生日快乐! Wish you lots of joy and good energy!", trans: "Selamat ulang tahun ya Zee! Semoga kamu selalu penuh keceriaan dan energi baik!" },
+    { name: "Juhoon", lang: "Korean", native: "지(Zee), 생일 진심으로 축하해! 오늘 하루 제일 행복하길 바랄게.", trans: "Zee, selamat ulang tahun dengan tulus! Semoga hari ini paling membahagiakan buatmu." },
+    { name: "Seonghyeon", lang: "Korean", native: "지 생일 축하해! 하고 싶은 일 다 이루고 항상 건강하자.", trans: "Selamat ulang tahun Zee! Semoga semua yang mau kamu capai terwujud dan selalu sehat." },
+    { name: "Keonho", lang: "Korean", native: "지 누나/친구 생일 축하해요! 오늘도 웃음 가득한 하루 되세요!", trans: "Selamat ulang tahun Zee! Semoga hari ini juga penuh tawa dan kebahagiaan!" }
+  ],
+  ENHYPEN: [
+    { name: "Jungwon", lang: "Korean", native: "지, 생일 축하해! 오늘 하루도 따뜻하고 행복한 시간 보내길 바랄게.", trans: "Zee, selamat ulang tahun! Semoga hari ini juga kamu jalani dengan hangat dan bahagia." },
+    { name: "Jay", lang: "English / Korean", native: "Happy birthday, Zee! Stay cool, stay healthy, and make great memories!", trans: "Selamat ulang tahun, Zee! Tetap keren, tetap sehat, dan bikin banyak kenangan seru!" },
+    { name: "Jake", lang: "English / Korean", native: "Happy birthday, Zee! Hope your day is full of smiles and good vibes!", trans: "Selamat ulang tahun, Zee! Semoga harimu penuh senyuman dan energi positif!" },
+    { name: "Sunghoon", lang: "Korean", native: "지 생일 축하합니다. 앞으로도 빛나는 날들만 가득하길 응원할게요.", trans: "Selamat ulang tahun Zee. Aku dukung terus semoga ke depannya penuh hari yang bersinar." },
+    { name: "Sunoo", lang: "Korean", native: "지 생일 너무 축하해! 오늘도 상큼하고 기분 좋은 하루 되자!", trans: "Selamat ulang tahun banget buat Zee! Semoga hari ini segar dan bikin mood bagus!" },
+    { name: "Ni-ki", lang: "Japanese / Korean", native: "Zee、お誕生日おめでとう！最高の1年になりますように！", trans: "Zee, selamat ulang tahun! Semoga menjadi satu tahun terbaik buatmu!" }
+  ],
+  LNGSHOT: [
+    { name: "Ohyul", lang: "Korean", native: "지 생일 축하해! 네가 가는 길마다 좋은 일만 가득하길 바랄게.", trans: "Selamat ulang tahun Zee! Semoga di setiap langkahmu penuh hal-hal baik." },
+    { name: "Ryul", lang: "Korean", native: "지 생일 축하한다! 오늘 제일 신나고 멋진 하루 보내!", trans: "Selamat ulang tahun Zee! Jalani hari paling seru dan keren hari ini!" },
+    { name: "Woojin", lang: "Korean", native: "지 생일 축하해! 항상 건강하고 원하는 목표 꼭 이루자!", trans: "Selamat ulang tahun Zee! Selalu sehat dan semoga target yang kamu mau tercapai!" },
+    { name: "Louis", lang: "French / Korean", native: "Joyeux anniversaire, Zee ! 생일 축하해! Passe une super journée !", trans: "Selamat ulang tahun, Zee! Semoga harimu super menyenangkan!" }
+  ]
+};
+function showGroupWishes(group, cardEl) {
+  cardEl.classList.toggle('zoomed');
+  const panel = document.getElementById('memberWishPanel');
+  const list = document.getElementById('memberWishList');
+  const items = groupWishes[group] || [];
+  document.getElementById('wishGroupTitle').textContent = `${group} — BIRTHDAY WISHES`;
+  document.getElementById('wishGroupCount').textContent = `${items.length} MEMBERS`;
+  list.innerHTML = items.map(m => `<div class="member-wish-item"><div class="member-name-row"><span>${m.name}</span><span>[${m.lang}]</span></div><p class="member-native">"${m.native}"</p><p class="member-trans">Artinya: "${m.trans}"</p></div>`).join('');
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function pullLetterOut() {
+  document.getElementById('letterSheet').classList.add('slide-out');
+  document.getElementById('firstBtn').textContent = "✉ KERTAS SUDAH KELUAR • TAP KERTAS DI BAWAH";
+}
+
+function expandLetter() {
+  const sheet = document.getElementById('letterSheet');
+  if (!sheet.classList.contains('slide-out')) return;
+  sheet.classList.add('expanded');
+  document.getElementById('letterFullBody').classList.remove('hidden');
+  document.getElementById('letterTapHint').textContent = "✓ KERTAS TERBUKA FULL";
+  document.getElementById('secondBtn').classList.remove('hidden');
+}
+
+function enterMainWeb() {
+  const screen = document.getElementById('envelopeScreen');
+  document.title = "Happy Birthday Zee! 🎂💙";
+  screen.classList.add('fade-out');
+  setTimeout(() => { screen.classList.add('hidden'); confettiBig(); }, 450);
+}
+
+function toggleMenu(e) { e.stopPropagation(); document.getElementById('navMenu').classList.toggle('hidden'); }
+document.addEventListener('click', () => document.getElementById('navMenu')?.classList.add('hidden'));
+
+function goSection(secName, pillText, btnEl) {
+  ['home', 'photos', 'music', 'komen'].forEach(name => document.getElementById('sec-' + name).classList.toggle('hidden', name !== secName));
+  document.getElementById('sectionPill').textContent = pillText;
+  if (btnEl) { document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btnEl.classList.add('active'); }
+  document.getElementById('navMenu').classList.add('hidden');
+}
+
+function openTabByName(secName) {
+  const map = { home: ['MENU: HOME', 0], photos: ['MENU: PHOTO CARDS', 1], music: ['MENU: MUSIC DECK', 2], komen: ['MENU: TRIVIA, RECEIPT & WA', 3] };
+  const target = map[secName];
+  if (target) goSection(secName, target[0], document.querySelectorAll('.nav-item')[target[1]]);
+}
+const trivias = [
+  { q: "Vibe ulang tahun Zee paling pas pakai nuansa apa?", opts: ["Pastel biru + retro B&W", "Full neon gelap doang"], res: "Match! Pastel biru & B&W bikin kesan clean + retro." },
+  { q: "Lineup utama arsip ultah Zee ada grup mana aja?", opts: ["CORTIS • ENHYPEN • LNGSHOT", "Cuma satu grup aja"], res: "Tepat! Ketiganya hadir lengkap di arsip Zee." }
+];
+let tIdx = 0;
+
+function renderTrivia() {
+  const item = trivias[tIdx];
+  document.getElementById('triviaBadge').textContent = `${tIdx + 1}/${trivias.length}`;
+  document.getElementById('triviaQuestion').textContent = item.q;
+  document.getElementById('triviaResult').textContent = "";
+  const box = document.getElementById('triviaOptions');
+  box.innerHTML = "";
+  item.opts.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'trivia-opt';
+    b.textContent = opt;
+    b.onclick = () => {
+      box.querySelectorAll('.trivia-opt').forEach(x => x.classList.remove('picked'));
+      b.classList.add('picked');
+      document.getElementById('triviaResult').textContent = item.res;
+      setTimeout(() => { tIdx = (tIdx + 1) % trivias.length; renderTrivia(); }, 1800);
+    };
+    box.appendChild(b);
+  });
+}
+
+function updateReceipt() {
+  document.getElementById('rcName').textContent = document.getElementById('senderName').value.trim() || "Teman Zee";
+  document.getElementById('rcTag').textContent = document.getElementById('biasTag').value;
+  document.getElementById('rcMsg').textContent = document.getElementById('wishMsg').value.trim() || "Happy Birthday Zee!";
+}
+
+function sendToWA() {
+  const name = document.getElementById('senderName').value.trim() || "Teman Zee";
+  const tag = document.getElementById('biasTag').value;
+  const msg = document.getElementById('wishMsg').value.trim() || "Happy Birthday Zee! Semoga sehat, sukses, dan bahagia selalu!";
+  const text = `🧾 *ZEE RETRO RECEIPT*\n🎂 *UCAPAN ULTAH BUAT ZEE*\n\nDari: *${name}*\nVibe: *${tag}*\nPesan: ${msg}`;
+  window.open(`https://wa.me/${ZEE_WA}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareStatusWA() {
+  window.open(`https://wa.me/?text=${encodeURIComponent(`Happy Birthday Zee (Athaya Zivara Adini)! 🎂💙 Cek & kirim ucapanmu di sini: ${window.location.href}`)}`, '_blank');
+}
+
+function copyPageLink() {
+  const btn = document.getElementById('copyBtn');
+  navigator.clipboard?.writeText(window.location.href).catch(() => {});
+  btn.textContent = "✅ TERSALIN!";
+  setTimeout(() => { btn.textContent = "🔗 SALIN LINK HALAMAN"; }, 1800);
+}
+const tracks = [
+  { title: "CORTIS — What You Want", note: "Pastel Blue • Tape 01 (cortis.mp3)", src: "cortis.mp3", synth: [392, 440, 523.25, 440, 587.33] },
+  { title: "ENHYPEN — Given-Taken", note: "Archive Session • Tape 02 (enhypen.mp3)", src: "enhypen.mp3", synth: [329.63, 392, 493.88, 440, 392] },
+  { title: "LNGSHOT — Moonwalkin'", note: "Gingham Edition • Tape 03 (lngshot.mp3)", src: "lngshot.mp3", synth: [261.63, 329.63, 392, 523.25, 493.88] }
+];
+let currentTrack = 0, synthTimer = null;
+const audioEl = document.getElementById('kpopAudio');
+
+function renderTrackInfo() {
+  const t = tracks[currentTrack];
+  document.getElementById('trackTitle').textContent = t.title;
+  document.getElementById('trackSub').textContent = t.note;
+  document.querySelectorAll('.tpill').forEach((p, idx) => p.classList.toggle('active', idx === currentTrack));
+}
+function stopSynthLoop() { if (synthTimer) { clearInterval(synthTimer); synthTimer = null; } }
+function startSynthFallback(t) {
+  stopSynthLoop();
+  let step = 0;
+  document.getElementById('deckStatus').textContent = "SYNTH MODE";
+  document.getElementById('deckFill').style.width = "65%";
+  synthTimer = setInterval(() => { tone(t.synth[step % t.synth.length], 0.35); step++; }, 420);
+}
+async function playCurrentTrack() {
+  const t = tracks[currentTrack];
+  stopSynthLoop();
+  document.getElementById('deckStatus').textContent = "LOADING...";
+  if (audioEl.getAttribute('src') !== t.src) {
+    audioEl.pause();
+    audioEl.src = t.src;
+    audioEl.load();
+  }
+  try {
+    await audioEl.play();
+    stopSynthLoop();
+    document.getElementById('deckStatus').textContent = "PLAYING ♪";
+  } catch (e) {
+    if (audioEl.paused) startSynthFallback(t);
+  }
+}
+function pauseCurrentTrack() {
+  audioEl.pause(); stopSynthLoop();
+  document.getElementById('deckStatus').textContent = "PAUSED";
+  document.getElementById('deckFill').style.width = "0%";
+}
+function selectTrack(idx) { currentTrack = idx; renderTrackInfo(); playCurrentTrack(); }
+function toggleTrack() { (!audioEl.paused && !audioEl.ended) || synthTimer ? pauseCurrentTrack() : playCurrentTrack(); }
+function prevNextTrack(dir) { currentTrack = (currentTrack + dir + tracks.length) % tracks.length; renderTrackInfo(); playCurrentTrack(); }
+audioEl.addEventListener('playing', () => { stopSynthLoop(); document.getElementById('deckStatus').textContent = "PLAYING ♪"; });
+audioEl.addEventListener('timeupdate', () => { if (audioEl.duration) document.getElementById('deckFill').style.width = ((audioEl.currentTime / audioEl.duration) * 100) + '%'; });
+audioEl.addEventListener('ended', () => { document.getElementById('deckStatus').textContent = "ENDED"; document.getElementById('deckFill').style.width = "100%"; });
+const song = [
+  {n:'5',s:'Sol',f:392},{n:'5',s:'Sol',f:392},{n:'6',s:'La',f:440},{n:'5',s:'Sol',f:392},{n:"1'",s:'Do^',f:523.25},{n:'7',s:'Si',f:493.88},
+  {n:'5',s:'Sol',f:392},{n:'5',s:'Sol',f:392},{n:'6',s:'La',f:440},{n:'5',s:'Sol',f:392},{n:"2'",s:'Re^',f:587.33},{n:"1'",s:'Do^',f:523.25},
+  {n:'5',s:'Sol',f:392},{n:'5',s:'Sol',f:392},{n:"5'",s:'Sol^',f:784},{n:"3'",s:'Mi^',f:659.25},{n:"1'",s:'Do^',f:523.25},{n:'7',s:'Si',f:493.88},{n:'6',s:'La',f:440},
+  {n:"4'",s:'Fa^',f:698.46},{n:"4'",s:'Fa^',f:698.46},{n:"3'",s:'Mi^',f:659.25},{n:"1'",s:'Do^',f:523.25},{n:"2'",s:'Re^',f:587.33},{n:"1'",s:'Do^',f:523.25}
+];
+const notesDiv = document.getElementById('notes');
+song.forEach((t, i) => { const d = document.createElement('div'); d.className = 'note'; d.id = 'n' + i; d.innerHTML = `<b>${t.n}</b><br><small>${t.s}</small>`; notesDiv.appendChild(d); });
+
+let actx = null;
+function tone(freq, dur = 0.5) {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'triangle'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.001, actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.45, actx.currentTime + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(); o.stop(actx.currentTime + dur);
+}
+
+let playing = false;
+document.getElementById('play').onclick = async () => {
+  if (playing) return;
+  pauseCurrentTrack(); playing = true;
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  actx.resume();
+  for (let i = 0; i < song.length; i++) {
+    document.querySelectorAll('.note').forEach(e => e.classList.remove('active'));
+    document.getElementById('n' + i).classList.add('active');
+    tone(song[i].f, 0.55);
+    await new Promise(r => setTimeout(r, (i == 5 || i == 11 || i == 18 || i == 23) ? 800 : 480));
+  }
+  document.querySelectorAll('.note').forEach(e => e.classList.remove('active'));
+  playing = false; confettiBig();
+};
+
+const pianoNotes = [
+  {n:'1',s:'Do',f:261.63},{n:'2',s:'Re',f:293.66},{n:'3',s:'Mi',f:329.63},{n:'4',s:'Fa',f:349.23},
+  {n:'5',s:'Sol',f:392},{n:'6',s:'La',f:440},{n:'7',s:'Si',f:493.88},{n:"1'",s:'Do^',f:523.25}
+];
+const pd = document.getElementById('piano');
+pianoNotes.forEach(p => { const k = document.createElement('div'); k.className = 'key'; k.innerHTML = p.n + '<br>' + p.s; k.onclick = () => tone(p.f, 0.6); pd.appendChild(k); });
+function spawn(e) {
+  const b = document.createElement('div');
+  b.className = 'float-item'; b.textContent = e;
+  b.style.left = Math.random() * 100 + 'vw';
+  b.style.animationDuration = (3 + Math.random() * 3) + 's';
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 6000);
+}
+function confettiBig() {
+  const icons = ['💙', '🤍', '🖤', '⭐', '🎂', '💿'];
+  for (let i = 0; i < 35; i++) setTimeout(() => spawn(icons[Math.floor(Math.random() * icons.length)]), i * 75);
+}
+
+renderTrackInfo();
+renderTrivia();
+updateReceipt();
+</script>
+</body>
+</html>
